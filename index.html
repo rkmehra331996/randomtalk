@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RandomTalk — Stranger Audio Chat</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c26;
+    --border: rgba(255,255,255,0.08);
+    --accent: #6c5ce7;
+    --accent2: #a29bfe;
+    --text: #f0f0f5;
+    --text-muted: #8888a0;
+    --green: #00d2a0;
+    --red: #ff6b6b;
+    --yellow: #ffd93d;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 2rem;
+    color: var(--text);
+  }
+  .logo span { color: var(--accent2); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+  }
+
+  /* Status indicator */
+  .status-ring {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    transition: border-color 0.4s;
+  }
+  .status-ring.waiting { border-color: var(--yellow); animation: pulse-yellow 1.5s infinite; }
+  .status-ring.connected { border-color: var(--green); }
+  .status-ring.idle { border-color: var(--border); }
+
+  @keyframes pulse-yellow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,217,61,0.3); }
+    50% { box-shadow: 0 0 0 12px rgba(255,217,61,0); }
+  }
+  @keyframes pulse-green {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,210,160,0.3); }
+    50% { box-shadow: 0 0 0 12px rgba(0,210,160,0); }
+  }
+
+  .avatar-icon {
+    font-size: 2.5rem;
+    line-height: 1;
+  }
+
+  /* Sound visualizer bars */
+  .visualizer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 32px;
+    margin-bottom: 1.2rem;
+  }
+  .bar {
+    width: 4px;
+    border-radius: 2px;
+    background: var(--accent2);
+    height: 6px;
+    transition: height 0.1s;
+    opacity: 0.3;
+  }
+  .visualizer.active .bar { opacity: 1; }
+  .visualizer.active .bar:nth-child(1) { animation: bar1 0.8s ease infinite; }
+  .visualizer.active .bar:nth-child(2) { animation: bar2 0.7s ease infinite 0.1s; }
+  .visualizer.active .bar:nth-child(3) { animation: bar3 0.9s ease infinite 0.05s; }
+  .visualizer.active .bar:nth-child(4) { animation: bar2 0.6s ease infinite 0.15s; }
+  .visualizer.active .bar:nth-child(5) { animation: bar1 0.8s ease infinite 0.2s; }
+
+  @keyframes bar1 { 0%,100%{height:6px} 50%{height:22px} }
+  @keyframes bar2 { 0%,100%{height:10px} 50%{height:28px} }
+  @keyframes bar3 { 0%,100%{height:4px} 50%{height:20px} }
+
+  .status-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    color: var(--text);
+  }
+  .status-sub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    min-height: 1.2em;
+  }
+
+  /* Timer */
+  .timer {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 1.5rem;
+    display: none;
+  }
+  .timer.visible { display: block; }
+
+  /* Buttons */
+  .btn {
+    width: 100%;
+    padding: 0.85rem;
+    border-radius: 12px;
+    border: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 0.7rem;
+    letter-spacing: 0.2px;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:hover:not(:disabled) { background: #7d6ef0; }
+
+  .btn-next {
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid rgba(162,155,254,0.3);
+  }
+  .btn-next:hover:not(:disabled) { background: rgba(162,155,254,0.08); }
+
+  .btn-stop {
+    background: transparent;
+    color: var(--red);
+    border: 1px solid rgba(255,107,107,0.3);
+  }
+  .btn-stop:hover:not(:disabled) { background: rgba(255,107,107,0.08); }
+
+  /* Mute toggle */
+  .mute-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-bottom: 1.2rem;
+  }
+  .mute-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: background 0.2s;
+    color: var(--text);
+  }
+  .mute-btn:hover { background: rgba(255,255,255,0.06); }
+  .mute-btn.muted { background: rgba(255,107,107,0.15); border-color: rgba(255,107,107,0.3); }
+  .mute-label { font-size: 0.78rem; color: var(--text-muted); }
+
+  /* Stats */
+  .stats-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .stat {
+    flex: 1;
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 0.6rem;
+    text-align: center;
+  }
+  .stat-num { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
+  .stat-lbl { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+
+  /* Error toast */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #2a1a1a;
+    border: 1px solid rgba(255,107,107,0.4);
+    color: var(--red);
+    padding: 0.75rem 1.2rem;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    transition: transform 0.3s;
+    white-space: nowrap;
+    z-index: 100;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  audio { display: none; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1rem 0;
+  }
+
+  .tips {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="logo">Random<span>Talk</span> 🎙️</div>
+
+<div class="card">
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat">
+      <div class="stat-num" id="totalChats">0</div>
+      <div class="stat-lbl">Chats</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="onlineCount">—</div>
+      <div class="stat-lbl">Online</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num" id="totalTime">0:00</div>
+      <div class="stat-lbl">Total time</div>
+    </div>
+  </div>
+
+  <!-- Avatar ring -->
+  <div class="status-ring idle" id="statusRing">
+    <div class="avatar-icon" id="avatarIcon">👤</div>
+  </div>
+
+  <!-- Sound visualizer -->
+  <div class="visualizer" id="visualizer">
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+    <div class="bar"></div>
+  </div>
+
+  <div class="status-label" id="statusLabel">Connect with a stranger</div>
+  <div class="status-sub" id="statusSub">Audio only — completely anonymous</div>
+  <div class="timer" id="timer">⏱ 0:00</div>
+
+  <!-- Mute button (hidden until connected) -->
+  <div class="mute-row" id="muteRow" style="display:none">
+    <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🎤</button>
+    <span class="mute-label" id="muteLabel">Mic on</span>
+  </div>
+
+  <!-- Action buttons -->
+  <button class="btn btn-primary" id="startBtn" onclick="startChat()">🎙️ Start Chatting</button>
+  <button class="btn btn-next" id="nextBtn" onclick="nextStranger()" disabled style="display:none">⏭ Next Stranger</button>
+  <button class="btn btn-stop" id="stopBtn" onclick="stopChat()" disabled style="display:none">✕ Stop</button>
+
+  <hr class="divider">
+  <div class="tips">🔒 No accounts · No recordings · Strangers only · Audio only</div>
+</div>
+
+<div class="toast" id="toast"></div>
+<audio id="remoteAudio" autoplay></audio>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+
+let localStream = null;
+let peerConnection = null;
+let isMuted = false;
+let callTimer = null;
+let callSeconds = 0;
+let totalSeconds = 0;
+let totalChats = 0;
+let totalTimer = null;
+let currentRoomId = null;
+let partnerId = null;
+let analyserInterval = null;
+
+const iceConfig = {
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ]
+};
+
+const statusRing = document.getElementById('statusRing');
+const avatarIcon = document.getElementById('avatarIcon');
+const statusLabel = document.getElementById('statusLabel');
+const statusSub = document.getElementById('statusSub');
+const timerEl = document.getElementById('timer');
+const startBtn = document.getElementById('startBtn');
+const nextBtn = document.getElementById('nextBtn');
+const stopBtn = document.getElementById('stopBtn');
+const muteRow = document.getElementById('muteRow');
+const muteBtn = document.getElementById('muteBtn');
+const muteLabel = document.getElementById('muteLabel');
+const visualizer = document.getElementById('visualizer');
+const remoteAudio = document.getElementById('remoteAudio');
+
+function setState(state) {
+  statusRing.className = 'status-ring ' + state;
+  if (state === 'idle') {
+    avatarIcon.textContent = '👤';
+    startBtn.style.display = 'block';
+    startBtn.disabled = false;
+    nextBtn.style.display = 'none';
+    stopBtn.style.display = 'none';
+    muteRow.style.display = 'none';
+    timerEl.classList.remove('visible');
+    visualizer.classList.remove('active');
+  } else if (state === 'waiting') {
+    avatarIcon.textContent = '⏳';
+    startBtn.style.display = 'none';
+    nextBtn.style.display = 'none';
+    stopBtn.style.display = 'block';
+    stopBtn.disabled = false;
+    muteRow.style.display = 'none';
+  } else if (state === 'connected') {
+    avatarIcon.textContent = '🎙️';
+    startBtn.style.display = 'none';
+    nextBtn.style.display = 'block';
+    nextBtn.disabled = false;
+    stopBtn.style.display = 'block';
+    stopBtn.disabled = false;
+    muteRow.style.display = 'flex';
+    timerEl.classList.add('visible');
+    visualizer.classList.add('active');
+  }
+}
+
+async function getMic() {
+  if (localStream) return localStream;
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    return localStream;
+  } catch (e) {
+    showToast('Mic access denied. Please allow microphone.');
+    return null;
+  }
+}
+
+async function startChat() {
+  const stream = await getMic();
+  if (!stream) return;
+  setState('waiting');
+  statusLabel.textContent = 'Finding a stranger...';
+  statusSub.textContent = 'Please wait';
+  socket.emit('find_partner');
+}
+
+function stopChat() {
+  socket.emit('next');
+  cleanup();
+  setState('idle');
+  statusLabel.textContent = 'Connect with a stranger';
+  statusSub.textContent = 'Audio only — completely anonymous';
+  stopCallTimer();
+}
+
+function nextStranger() {
+  socket.emit('next');
+  cleanup();
+  setState('waiting');
+  statusLabel.textContent = 'Finding next stranger...';
+  statusSub.textContent = 'Please wait';
+  socket.emit('find_partner');
+}
+
+function cleanup() {
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
+  }
+  remoteAudio.srcObject = null;
+  stopCallTimer();
+}
+
+function startCallTimer() {
+  callSeconds = 0;
+  stopCallTimer();
+  callTimer = setInterval(() => {
+    callSeconds++;
+    totalSeconds++;
+    timerEl.textContent = '⏱ ' + fmt(callSeconds);
+    document.getElementById('totalTime').textContent = fmt(totalSeconds);
+  }, 1000);
+}
+
+function stopCallTimer() {
+  clearInterval(callTimer);
+  callTimer = null;
+}
+
+function fmt(s) {
+  return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
+}
+
+function toggleMute() {
+  isMuted = !isMuted;
+  if (localStream) {
+    localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
+  }
+  muteBtn.textContent = isMuted ? '🔇' : '🎤';
+  muteBtn.classList.toggle('muted', isMuted);
+  muteLabel.textContent = isMuted ? 'Mic off' : 'Mic on';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function createPeer(isInitiator) {
+  const pc = new RTCPeerConnection(iceConfig);
+
+  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+
+  pc.ontrack = (e) => {
+    remoteAudio.srcObject = e.streams[0];
+    remoteAudio.play().catch(() => {});
+    visualizer.classList.add('active');
+  };
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate) {
+      socket.emit('send_signal', {
+        roomId: currentRoomId,
+        signal: { type: 'candidate', candidate: e.candidate }
+      });
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'connected') {
+      statusSub.textContent = 'You are connected — say hello! 👋';
+    } else if (pc.connectionState === 'failed') {
+      showToast('Connection failed. Try next.');
+    }
+  };
+
+  if (isInitiator) {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socket.emit('send_signal', {
+      roomId: currentRoomId,
+      signal: { type: 'offer', sdp: pc.localDescription }
+    });
+  }
+
+  return pc;
+}
+
+// Socket events
+socket.on('waiting', () => {
+  statusLabel.textContent = 'Finding a stranger...';
+  statusSub.textContent = 'You are in the queue';
+});
+
+socket.on('partner_found', async ({ roomId, isInitiator }) => {
+  currentRoomId = roomId;
+  setState('connected');
+  statusLabel.textContent = 'Connected!';
+  statusSub.textContent = 'Say hello! 👋';
+  totalChats++;
+  document.getElementById('totalChats').textContent = totalChats;
+  startCallTimer();
+
+  const stream = await getMic();
+  if (!stream) return;
+  peerConnection = await createPeer(isInitiator);
+});
+
+socket.on('receive_signal', async ({ from, signal }) => {
+  if (!peerConnection) {
+    const stream = await getMic();
+    if (!stream) return;
+    peerConnection = await createPeer(false);
+  }
+
+  if (signal.type === 'offer') {
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    socket.emit('send_signal', {
+      roomId: currentRoomId,
+      signal: { type: 'answer', sdp: peerConnection.localDescription }
+    });
+  } else if (signal.type === 'answer') {
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp));
+  } else if (signal.type === 'candidate') {
+    try {
+      await peerConnection.addIceCandidate(new RTCIceCandidate(signal.candidate));
+    } catch(e) {}
+  }
+});
+
+socket.on('partner_left', () => {
+  cleanup();
+  setState('idle');
+  statusLabel.textContent = 'Stranger disconnected';
+  statusSub.textContent = 'Click start to find someone new';
+  showToast('Stranger left the chat');
+});
+
+socket.on('connect_error', () => {
+  showToast('Server not reachable. Is the server running?');
+});
+
+// Online count (demo)
+socket.on('online_count', (n) => {
+  document.getElementById('onlineCount').textContent = n;
+});
+</script>
+</body>
+</html>
