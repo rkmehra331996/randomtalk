@@ -1,559 +1,1453 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RandomTalk — Stranger Audio Chat</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>RaniRajaCall — Anonymous Voice Chat</title>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg: #0a0a0f;
-    --surface: #13131a;
-    --surface2: #1c1c26;
-    --border: rgba(255,255,255,0.08);
     --accent: #6c5ce7;
-    --accent2: #a29bfe;
-    --text: #f0f0f5;
-    --text-muted: #8888a0;
-    --green: #00d2a0;
-    --red: #ff6b6b;
-    --yellow: #ffd93d;
+    --accent-dark: #5a4bd1;
+    --accent-light: #ede9fe;
+    --bg: #ffffff;
+    --text: #1a1a2e;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --green: #16a34a;
+    --saffron: #ff9933;
+    --india-green: #138808;
+    --danger: #dc2626;
+    --danger-bg: #fee2e2;
   }
 
-  body {
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    overscroll-behavior: none;
+  }
+
+  /* ---- Screenshot / select deterrents (CSS-side, see header comment) ---- */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  img.media-img {
+    -webkit-user-drag: none;
+    user-drag: none;
+    pointer-events: none;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* ===================== TOP BAR ===================== */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    flex-shrink: 0;
+    gap: 10px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.3px;
+  }
+
+  .logo .flag-dot {
+    display: inline-flex;
+    flex-direction: column;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .flag-dot span { flex: 1; }
+  .flag-dot span:nth-child(1) { background: var(--saffron); }
+  .flag-dot span:nth-child(2) { background: #fff; border-top:1px solid #eee; border-bottom:1px solid #eee; }
+  .flag-dot span:nth-child(3) { background: var(--india-green); }
+
+  .logo .raja { color: var(--accent); }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .online-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--accent-light);
+    color: var(--accent-dark);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .online-pill .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 0 rgba(22,163,74,0.5);
+    animation: pulseDot 1.8s infinite;
+  }
+  @keyframes pulseDot {
+    0% { box-shadow: 0 0 0 0 rgba(22,163,74,0.5); }
+    70% { box-shadow: 0 0 0 6px rgba(22,163,74,0); }
+    100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+  }
+
+  .session-timer {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* ===================== AD SLOTS ===================== */
+  /* Swap the inner contents of .ad-slot for your ad network's embed/script tag.
+     Random-stranger chat apps are commonly REJECTED by mainstream programmatic
+     ad networks (policy violation), so verify eligibility with your provider
+     before going live. These are inert placeholders. */
+  .ad-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #faf9ff;
+    border: 1px dashed var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .ad-slot.banner-top, .ad-slot.banner-bottom {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  /* ===================== MAIN LAYOUT ===================== */
+  .main-layout {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  .call-area {
+    flex: 1.3;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 20px;
+    position: relative;
+    min-width: 0;
+    gap: 18px;
+    overflow-y: auto;
   }
 
-  .logo {
-    font-size: 1.5rem;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    margin-bottom: 2rem;
-    color: var(--text);
-  }
-  .logo span { color: var(--accent2); }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 2rem;
-    width: 100%;
-    max-width: 420px;
-    text-align: center;
-  }
-
-  /* Status indicator */
-  .status-ring {
-    width: 120px;
-    height: 120px;
+  /* ---- Matching / avatar shuffle box ---- */
+  .match-box {
+    width: 150px;
+    height: 150px;
     border-radius: 50%;
-    margin: 0 auto 1.5rem;
+    background: var(--accent-light);
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    background: var(--surface2);
-    border: 2px solid var(--border);
-    transition: border-color 0.4s;
+    overflow: hidden;
+    border: 3px solid var(--accent);
+    flex-shrink: 0;
   }
-  .status-ring.waiting { border-color: var(--yellow); animation: pulse-yellow 1.5s infinite; }
-  .status-ring.connected { border-color: var(--green); }
-  .status-ring.idle { border-color: var(--border); }
-
-  @keyframes pulse-yellow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255,217,61,0.3); }
-    50% { box-shadow: 0 0 0 12px rgba(255,217,61,0); }
+  .match-box.searching {
+    animation: searchPulse 1.4s infinite;
   }
-  @keyframes pulse-green {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(0,210,160,0.3); }
-    50% { box-shadow: 0 0 0 12px rgba(0,210,160,0); }
+  @keyframes searchPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(108,92,231,0.35); }
+    50% { box-shadow: 0 0 0 14px rgba(108,92,231,0); }
   }
-
-  .avatar-icon {
-    font-size: 2.5rem;
+  .avatar-emoji {
+    font-size: 64px;
     line-height: 1;
+    animation: avatarFade 0.5s ease;
+  }
+  @keyframes avatarFade {
+    from { opacity: 0; transform: scale(0.7) rotate(-6deg); }
+    to { opacity: 1; transform: scale(1) rotate(0); }
   }
 
-  /* Sound visualizer bars */
+  .status-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--muted);
+    text-align: center;
+    min-height: 20px;
+  }
+  .status-text.connected { color: var(--india-green); }
+
+  /* ---- Audio visualizer ---- */
+  .visualizer-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
   .visualizer {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    height: 32px;
-    margin-bottom: 1.2rem;
-  }
-  .bar {
-    width: 4px;
-    border-radius: 2px;
-    background: var(--accent2);
-    height: 6px;
-    transition: height 0.1s;
-    opacity: 0.3;
-  }
-  .visualizer.active .bar { opacity: 1; }
-  .visualizer.active .bar:nth-child(1) { animation: bar1 0.8s ease infinite; }
-  .visualizer.active .bar:nth-child(2) { animation: bar2 0.7s ease infinite 0.1s; }
-  .visualizer.active .bar:nth-child(3) { animation: bar3 0.9s ease infinite 0.05s; }
-  .visualizer.active .bar:nth-child(4) { animation: bar2 0.6s ease infinite 0.15s; }
-  .visualizer.active .bar:nth-child(5) { animation: bar1 0.8s ease infinite 0.2s; }
-
-  @keyframes bar1 { 0%,100%{height:6px} 50%{height:22px} }
-  @keyframes bar2 { 0%,100%{height:10px} 50%{height:28px} }
-  @keyframes bar3 { 0%,100%{height:4px} 50%{height:20px} }
-
-  .status-label {
-    font-size: 0.95rem;
-    font-weight: 600;
-    margin-bottom: 0.4rem;
-    color: var(--text);
-  }
-  .status-sub {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-bottom: 1.5rem;
-    min-height: 1.2em;
-  }
-
-  /* Timer */
-  .timer {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
-    margin-bottom: 1.5rem;
-    display: none;
-  }
-  .timer.visible { display: block; }
-
-  /* Buttons */
-  .btn {
-    width: 100%;
-    padding: 0.85rem;
-    border-radius: 12px;
-    border: none;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-bottom: 0.7rem;
-    letter-spacing: 0.2px;
-  }
-  .btn:active { transform: scale(0.97); }
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-  .btn-primary {
-    background: var(--accent);
-    color: #fff;
-  }
-  .btn-primary:hover:not(:disabled) { background: #7d6ef0; }
-
-  .btn-next {
-    background: transparent;
-    color: var(--accent2);
-    border: 1px solid rgba(162,155,254,0.3);
-  }
-  .btn-next:hover:not(:disabled) { background: rgba(162,155,254,0.08); }
-
-  .btn-stop {
-    background: transparent;
-    color: var(--red);
-    border: 1px solid rgba(255,107,107,0.3);
-  }
-  .btn-stop:hover:not(:disabled) { background: rgba(255,107,107,0.08); }
-
-  /* Mute toggle */
-  .mute-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.6rem;
-    margin-bottom: 1.2rem;
-  }
-  .mute-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    width: 44px;
+    align-items: flex-end;
+    gap: 4px;
     height: 44px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
-    transition: background 0.2s;
-    color: var(--text);
   }
-  .mute-btn:hover { background: rgba(255,255,255,0.06); }
-  .mute-btn.muted { background: rgba(255,107,107,0.15); border-color: rgba(255,107,107,0.3); }
-  .mute-label { font-size: 0.78rem; color: var(--text-muted); }
+  .visualizer .bar {
+    width: 6px;
+    background: var(--accent);
+    border-radius: 3px;
+    height: 8px;
+    transition: height 0.08s ease;
+  }
+  .visualizer.you .bar { background: var(--accent); }
+  .visualizer.stranger .bar { background: var(--india-green); }
 
-  /* Stats */
-  .stats-row {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
-  }
-  .stat {
-    flex: 1;
-    background: var(--surface2);
-    border-radius: 10px;
-    padding: 0.6rem;
+  .visualizer-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 4px;
     text-align: center;
   }
-  .stat-num { font-size: 1.1rem; font-weight: 700; color: var(--accent2); }
-  .stat-lbl { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
 
-  /* Error toast */
+  .viz-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ---- Reconnect panel ---- */
+  .reconnect-panel {
+    width: 100%;
+    max-width: 360px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #fafafa;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+  }
+  .reconnect-panel .label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+  .reconnect-row {
+    display: flex;
+    gap: 8px;
+  }
+  .reconnect-row input {
+    flex: 1;
+    min-width: 0;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .reconnect-row input:focus { outline: 2px solid var(--accent-light); border-color: var(--accent); }
+  .reconnect-row button {
+    flex-shrink: 0;
+    padding: 9px 14px;
+    font-size: 13px;
+  }
+  .reconnect-feedback {
+    font-size: 12px;
+    min-height: 16px;
+  }
+  .reconnect-feedback.error { color: var(--danger); }
+  .reconnect-feedback.ok { color: var(--india-green); }
+
+  /* ---- Active secret code banner ---- */
+  .code-banner {
+    width: 100%;
+    max-width: 360px;
+    background: linear-gradient(135deg, var(--accent-light), #fff);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 12px 14px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    text-align: center;
+  }
+  .code-banner.show { display: flex; }
+  .code-banner .code-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--accent-dark);
+    letter-spacing: 0.5px;
+  }
+  .code-banner .code-note {
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .code-banner .code-countdown {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* ---- Action buttons ---- */
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: transform 0.08s ease, opacity 0.15s ease, background 0.15s ease;
+  }
+  button:active { transform: scale(0.96); }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--accent-dark); }
+
+  .btn-outline { background: #fff; color: var(--accent); border: 1.5px solid var(--accent); }
+  .btn-outline:hover:not(:disabled) { background: var(--accent-light); }
+
+  .btn-danger { background: var(--danger-bg); color: var(--danger); }
+  .btn-danger:hover:not(:disabled) { background: #fecaca; }
+
+  .btn-muted { background: #f3f4f6; color: var(--text); }
+  .btn-muted:hover:not(:disabled) { background: #e5e7eb; }
+
+  .btn-icon { font-size: 15px; margin-right: 4px; }
+
+  /* ===================== SIDE PANEL (chat) ===================== */
+  .side-panel {
+    width: 340px;
+    flex-shrink: 0;
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: #fff;
+  }
+
+  .panel-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .typing-indicator {
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+    font-style: italic;
+    min-height: 14px;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .msg {
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 14px;
+    font-size: 13.5px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+  }
+  .msg.me {
+    align-self: flex-end;
+    background: var(--accent);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.them {
+    align-self: flex-start;
+    background: #f3f4f6;
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+  }
+  .msg.system {
+    align-self: center;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11.5px;
+    text-align: center;
+    max-width: 100%;
+  }
+
+  .media-bubble {
+    align-self: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 70%;
+  }
+  .media-bubble.me { align-self: flex-end; }
+  .media-bubble img {
+    max-width: 100%;
+    border-radius: 12px;
+    display: block;
+  }
+  .media-countdown {
+    font-size: 10.5px;
+    color: var(--muted);
+    text-align: center;
+  }
+  .media-gone {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    padding: 8px 12px;
+    background: #f3f4f6;
+    border-radius: 12px;
+    align-self: flex-start;
+  }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+    padding: 10px;
+    border-top: 1px solid var(--border);
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .chat-input-row input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 13.5px;
+  }
+  .chat-input-row input[type="text"]:focus {
+    outline: 2px solid var(--accent-light);
+    border-color: var(--accent);
+  }
+  .icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    flex-shrink: 0;
+    font-size: 16px;
+  }
+
+  /* ===================== SCREENSHOT WARNING OVERLAY ===================== */
+  .screenshot-warning {
+    position: fixed;
+    inset: 0;
+    background: rgba(220, 38, 38, 0.92);
+    color: #fff;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 9999;
+    text-align: center;
+    padding: 20px;
+  }
+  .screenshot-warning.show { display: flex; }
+  .screenshot-warning .big { font-size: 22px; font-weight: 800; }
+  .screenshot-warning .small { font-size: 13px; opacity: 0.9; max-width: 320px; }
+
+  /* ===================== TOAST ===================== */
   .toast {
     position: fixed;
-    bottom: 1.5rem;
+    bottom: 20px;
     left: 50%;
-    transform: translateX(-50%) translateY(80px);
-    background: #2a1a1a;
-    border: 1px solid rgba(255,107,107,0.4);
-    color: var(--red);
-    padding: 0.75rem 1.2rem;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text);
+    color: #fff;
+    padding: 10px 18px;
     border-radius: 10px;
-    font-size: 0.85rem;
-    transition: transform 0.3s;
-    white-space: nowrap;
-    z-index: 100;
+    font-size: 13px;
+    z-index: 5000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    max-width: 90vw;
+    text-align: center;
   }
-  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 
-  audio { display: none; }
-
-  .divider {
-    border: none;
+  /* ===================== INTERSTITIAL AD MODAL ===================== */
+  .interstitial-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 26, 46, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 6000;
+    padding: 20px;
+  }
+  .interstitial-overlay.show { display: flex; }
+  .interstitial-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 0;
+    width: 100%;
+    max-width: 380px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .interstitial-card .interstitial-ad-slot {
+    min-height: 220px;
+  }
+  .interstitial-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
     border-top: 1px solid var(--border);
-    margin: 1rem 0;
+  }
+  .interstitial-footer .skip-timer {
+    font-size: 12px;
+    color: var(--muted);
   }
 
-  .tips {
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    line-height: 1.6;
+  /* ===================== RESPONSIVE / MOBILE ===================== */
+  @media (max-width: 860px) {
+    .main-layout { flex-direction: column; }
+    .side-panel {
+      width: 100%;
+      border-left: none;
+      border-top: 1px solid var(--border);
+      height: 42vh;
+      flex-shrink: 0;
+    }
+    .call-area { padding: 14px; gap: 12px; }
+    .match-box { width: 110px; height: 110px; }
+    .avatar-emoji { font-size: 46px; }
+    .actions { gap: 8px; }
+    button { padding: 10px 14px; font-size: 13px; }
   }
+
+  @media (max-width: 420px) {
+    .topbar-right { gap: 8px; font-size: 11px; }
+    .logo { font-size: 16px; }
+    .reconnect-row { flex-direction: column; }
+    .reconnect-row button { width: 100%; }
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 3px; }
 </style>
 </head>
 <body>
 
-<div class="logo">Random<span>Talk</span> 🎙️</div>
+<div id="app">
 
-<div class="card">
-  <!-- Stats -->
-  <div class="stats-row">
-    <div class="stat">
-      <div class="stat-num" id="totalChats">0</div>
-      <div class="stat-lbl">Chats</div>
+  <!-- ===================== TOP BAR ===================== -->
+  <div class="topbar no-select">
+    <div class="logo">
+      <span class="flag-dot"><span></span><span></span><span></span></span>
+      RaniRaja<span class="raja">Call</span>
     </div>
-    <div class="stat">
-      <div class="stat-num" id="onlineCount">—</div>
-      <div class="stat-lbl">Online</div>
-    </div>
-    <div class="stat">
-      <div class="stat-num" id="totalTime">0:00</div>
-      <div class="stat-lbl">Total time</div>
+    <div class="topbar-right">
+      <span class="online-pill"><span class="dot"></span><span id="onlineCount">0</span> online</span>
+      <span class="session-timer" id="sessionTimer">00:00</span>
     </div>
   </div>
 
-  <!-- Avatar ring -->
-  <div class="status-ring idle" id="statusRing">
-    <div class="avatar-icon" id="avatarIcon">👤</div>
+  <!-- Banner ad: header -->
+  <div class="ad-slot banner-top" id="bannerTopAd">Ad space — banner (header)</div>
+
+  <!-- ===================== MAIN LAYOUT ===================== -->
+  <div class="main-layout">
+
+    <!-- ---- Call area ---- -->
+    <div class="call-area">
+
+      <div class="match-box" id="matchBox">
+        <div class="avatar-emoji" id="avatarEmoji">🙂</div>
+      </div>
+
+      <div class="status-text" id="statusText">Tap "Find Stranger" to begin</div>
+
+      <div class="visualizer-row">
+        <div class="viz-col">
+          <div class="visualizer you" id="vizYou">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+          </div>
+          <div class="visualizer-label">You</div>
+        </div>
+        <div class="viz-col">
+          <div class="visualizer stranger" id="vizStranger">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+          </div>
+          <div class="visualizer-label">Stranger</div>
+        </div>
+      </div>
+
+      <!-- Secret reconnect code banner (shown 30s after match, per spec) -->
+      <div class="code-banner no-select" id="codeBanner">
+        <div class="code-note">🔐 Your secret reconnect code</div>
+        <div class="code-value" id="codeValue">Rani-0000</div>
+        <div class="code-countdown" id="codeCountdown">Visible for 30s · valid 24h</div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary" id="findBtn">🔎 Find Stranger</button>
+        <button class="btn-muted" id="muteBtn" disabled>🎙️ Mute</button>
+        <button class="btn-outline" id="nextBtn" disabled>⏭️ Next</button>
+        <button class="btn-danger" id="stopBtn" disabled>⛔ Stop</button>
+        <button class="btn-muted" id="sendImageBtn" disabled>🖼️ Send Image</button>
+        <input type="file" id="imageInput" accept="image/*" style="display:none" />
+      </div>
+
+      <!-- Reconnect via code panel — always visible -->
+      <div class="reconnect-panel no-select">
+        <div class="label">Reconnect with secret code</div>
+        <div class="reconnect-row">
+          <input type="text" id="reconnectInput" placeholder="e.g. Rani-9821" maxlength="20" />
+          <button class="btn-outline" id="reconnectBtn">Reconnect</button>
+        </div>
+        <div class="reconnect-feedback" id="reconnectFeedback"></div>
+      </div>
+
+    </div>
+
+    <!-- ---- Side panel: chat ---- -->
+    <div class="side-panel">
+      <div class="panel-header">
+        <span>Chat</span>
+        <span class="typing-indicator" id="typingIndicator"></span>
+      </div>
+      <div class="chat-messages no-select" id="chatMessages"></div>
+      <div class="chat-input-row">
+        <button class="icon-btn btn-muted" id="attachBtn" disabled title="Send image">📎</button>
+        <input type="text" id="chatInput" placeholder="Type a message…" disabled maxlength="2000" />
+        <button class="icon-btn btn-primary" id="sendBtn" disabled title="Send">➤</button>
+      </div>
+    </div>
+
   </div>
 
-  <!-- Sound visualizer -->
-  <div class="visualizer" id="visualizer">
-    <div class="bar"></div>
-    <div class="bar"></div>
-    <div class="bar"></div>
-    <div class="bar"></div>
-    <div class="bar"></div>
-  </div>
+  <!-- Banner ad: footer -->
+  <div class="ad-slot banner-bottom" id="bannerBottomAd">Ad space — banner (footer)</div>
 
-  <div class="status-label" id="statusLabel">Connect with a stranger</div>
-  <div class="status-sub" id="statusSub">Audio only — completely anonymous</div>
-  <div class="timer" id="timer">⏱ 0:00</div>
-
-  <!-- Mute button (hidden until connected) -->
-  <div class="mute-row" id="muteRow" style="display:none">
-    <button class="mute-btn" id="muteBtn" onclick="toggleMute()">🎤</button>
-    <span class="mute-label" id="muteLabel">Mic on</span>
-  </div>
-
-  <!-- Action buttons -->
-  <button class="btn btn-primary" id="startBtn" onclick="startChat()">🎙️ Start Chatting</button>
-  <button class="btn btn-next" id="nextBtn" onclick="nextStranger()" disabled style="display:none">⏭ Next Stranger</button>
-  <button class="btn btn-stop" id="stopBtn" onclick="stopChat()" disabled style="display:none">✕ Stop</button>
-
-  <hr class="divider">
-  <div class="tips">🔒 No accounts · No recordings · Strangers only · Audio only</div>
 </div>
 
+<!-- Screenshot deterrent overlay -->
+<div class="screenshot-warning" id="screenshotWarning">
+  <div class="big">⚠️ Screenshots are not allowed</div>
+  <div class="small">For everyone's privacy, please don't capture or share this conversation. (This is a deterrent — RaniRajaCall cannot fully block OS-level screenshots.)</div>
+</div>
+
+<!-- Toast -->
 <div class="toast" id="toast"></div>
-<audio id="remoteAudio" autoplay></audio>
+
+<!-- Interstitial ad modal (shown after every 3rd "Next") -->
+<div class="interstitial-overlay" id="interstitialOverlay">
+  <div class="interstitial-card">
+    <div class="ad-slot interstitial-ad-slot" id="interstitialAdSlot">Ad space — interstitial</div>
+    <div class="interstitial-footer">
+      <span class="skip-timer" id="interstitialTimer">Continue in 5s…</span>
+      <button class="btn-primary" id="interstitialSkipBtn" disabled>Continue</button>
+    </div>
+  </div>
+</div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const socket = io();
+'use strict';
 
-let localStream = null;
-let peerConnection = null;
-let isMuted = false;
-let callTimer = null;
-let callSeconds = 0;
-let totalSeconds = 0;
-let totalChats = 0;
-let totalTimer = null;
-let currentRoomId = null;
-let partnerId = null;
-let analyserInterval = null;
+/**
+ * RaniRajaCall front-end logic.
+ * No localStorage/sessionStorage used anywhere (per no-storage requirement) —
+ * everything lives in plain JS variables for the lifetime of the tab only.
+ */
 
-const iceConfig = {
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
-  ]
-};
+(function () {
+  const socket = io();
 
-const statusRing = document.getElementById('statusRing');
-const avatarIcon = document.getElementById('avatarIcon');
-const statusLabel = document.getElementById('statusLabel');
-const statusSub = document.getElementById('statusSub');
-const timerEl = document.getElementById('timer');
-const startBtn = document.getElementById('startBtn');
-const nextBtn = document.getElementById('nextBtn');
-const stopBtn = document.getElementById('stopBtn');
-const muteRow = document.getElementById('muteRow');
-const muteBtn = document.getElementById('muteBtn');
-const muteLabel = document.getElementById('muteLabel');
-const visualizer = document.getElementById('visualizer');
-const remoteAudio = document.getElementById('remoteAudio');
+  // ---------------------------------------------------------------------
+  // DOM refs
+  // ---------------------------------------------------------------------
+  const onlineCountEl = document.getElementById('onlineCount');
+  const sessionTimerEl = document.getElementById('sessionTimer');
+  const matchBox = document.getElementById('matchBox');
+  const avatarEmoji = document.getElementById('avatarEmoji');
+  const statusText = document.getElementById('statusText');
+  const vizYou = document.getElementById('vizYou');
+  const vizStranger = document.getElementById('vizStranger');
+  const codeBanner = document.getElementById('codeBanner');
+  const codeValue = document.getElementById('codeValue');
+  const codeCountdown = document.getElementById('codeCountdown');
 
-function setState(state) {
-  statusRing.className = 'status-ring ' + state;
-  if (state === 'idle') {
-    avatarIcon.textContent = '👤';
-    startBtn.style.display = 'block';
-    startBtn.disabled = false;
-    nextBtn.style.display = 'none';
-    stopBtn.style.display = 'none';
-    muteRow.style.display = 'none';
-    timerEl.classList.remove('visible');
-    visualizer.classList.remove('active');
-  } else if (state === 'waiting') {
-    avatarIcon.textContent = '⏳';
-    startBtn.style.display = 'none';
-    nextBtn.style.display = 'none';
-    stopBtn.style.display = 'block';
+  const findBtn = document.getElementById('findBtn');
+  const muteBtn = document.getElementById('muteBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const stopBtn = document.getElementById('stopBtn');
+  const sendImageBtn = document.getElementById('sendImageBtn');
+  const imageInput = document.getElementById('imageInput');
+
+  const reconnectInput = document.getElementById('reconnectInput');
+  const reconnectBtn = document.getElementById('reconnectBtn');
+  const reconnectFeedback = document.getElementById('reconnectFeedback');
+
+  const chatMessages = document.getElementById('chatMessages');
+  const chatInput = document.getElementById('chatInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const attachBtn = document.getElementById('attachBtn');
+  const typingIndicator = document.getElementById('typingIndicator');
+
+  const screenshotWarning = document.getElementById('screenshotWarning');
+  const toastEl = document.getElementById('toast');
+
+  const interstitialOverlay = document.getElementById('interstitialOverlay');
+  const interstitialTimer = document.getElementById('interstitialTimer');
+  const interstitialSkipBtn = document.getElementById('interstitialSkipBtn');
+
+  // ---------------------------------------------------------------------
+  // State (all in-memory, all client-side, all wiped on refresh)
+  // ---------------------------------------------------------------------
+  let myPeerConnection = null;
+  let localStream = null;
+  let remoteStream = null;
+  let isInitiator = false;
+  let isMuted = false;
+  let isPaired = false;
+  let isSearching = false;
+  let nextPressCount = 0;
+
+  let sessionStartedAt = null;
+  let sessionTimerInterval = null;
+
+  let avatarShuffleInterval = null;
+  let codeCountdownInterval = null;
+
+  let localAnalyser = null;
+  let remoteAnalyser = null;
+  let audioContext = null;
+  let vizRAF = null;
+
+  const ICE_SERVERS = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+    ],
+  };
+
+  const AVATAR_EMOJIS = ['🙂', '👩', '👨', '🧑', '👩‍🦱', '👨‍🦱', '👩‍🦳', '👨‍🦳', '🧕', '👳‍♂️', '👩‍🦰', '🧔'];
+
+  // ---------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------
+  function showToast(msg, ms = 2200) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toastEl.classList.remove('show'), ms);
+  }
+
+  function setStatus(text, connected = false) {
+    statusText.textContent = text;
+    statusText.classList.toggle('connected', connected);
+  }
+
+  function addSystemMessage(text) {
+    const div = document.createElement('div');
+    div.className = 'msg system';
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function addChatMessage(text, who) {
+    const div = document.createElement('div');
+    div.className = `msg ${who}`;
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  function clearChat() {
+    chatMessages.innerHTML = '';
+  }
+
+  function formatTime(totalSeconds) {
+    const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const s = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function startSessionTimer() {
+    sessionStartedAt = Date.now();
+    clearInterval(sessionTimerInterval);
+    sessionTimerInterval = setInterval(() => {
+      const elapsed = (Date.now() - sessionStartedAt) / 1000;
+      sessionTimerEl.textContent = formatTime(elapsed);
+    }, 1000);
+  }
+
+  function stopSessionTimer() {
+    clearInterval(sessionTimerInterval);
+    sessionTimerEl.textContent = '00:00';
+  }
+
+  function startAvatarShuffle() {
+    matchBox.classList.add('searching');
+    clearInterval(avatarShuffleInterval);
+    avatarShuffleInterval = setInterval(() => {
+      const next = AVATAR_EMOJIS[Math.floor(Math.random() * AVATAR_EMOJIS.length)];
+      avatarEmoji.textContent = next;
+    }, 350);
+  }
+
+  function stopAvatarShuffle(finalEmoji) {
+    matchBox.classList.remove('searching');
+    clearInterval(avatarShuffleInterval);
+    if (finalEmoji) avatarEmoji.textContent = finalEmoji;
+  }
+
+  function setButtonsForIdle() {
+    findBtn.disabled = false;
+    findBtn.textContent = '🔎 Find Stranger';
+    muteBtn.disabled = true;
+    nextBtn.disabled = true;
+    stopBtn.disabled = true;
+    sendImageBtn.disabled = true;
+    attachBtn.disabled = true;
+    chatInput.disabled = true;
+    sendBtn.disabled = true;
+  }
+
+  function setButtonsForSearching() {
+    findBtn.disabled = true;
+    findBtn.textContent = '🔎 Searching…';
+    muteBtn.disabled = true;
+    nextBtn.disabled = true;
     stopBtn.disabled = false;
-    muteRow.style.display = 'none';
-  } else if (state === 'connected') {
-    avatarIcon.textContent = '🎙️';
-    startBtn.style.display = 'none';
-    nextBtn.style.display = 'block';
+    sendImageBtn.disabled = true;
+    attachBtn.disabled = true;
+    chatInput.disabled = true;
+    sendBtn.disabled = true;
+  }
+
+  function setButtonsForPaired() {
+    findBtn.disabled = true;
+    findBtn.textContent = '🔎 Find Stranger';
+    muteBtn.disabled = false;
     nextBtn.disabled = false;
-    stopBtn.style.display = 'block';
     stopBtn.disabled = false;
-    muteRow.style.display = 'flex';
-    timerEl.classList.add('visible');
-    visualizer.classList.add('active');
-  }
-}
-
-async function getMic() {
-  if (localStream) return localStream;
-  try {
-    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-    return localStream;
-  } catch (e) {
-    showToast('Mic access denied. Please allow microphone.');
-    return null;
-  }
-}
-
-async function startChat() {
-  const stream = await getMic();
-  if (!stream) return;
-  setState('waiting');
-  statusLabel.textContent = 'Finding a stranger...';
-  statusSub.textContent = 'Please wait';
-  socket.emit('find_partner');
-}
-
-function stopChat() {
-  socket.emit('next');
-  cleanup();
-  setState('idle');
-  statusLabel.textContent = 'Connect with a stranger';
-  statusSub.textContent = 'Audio only — completely anonymous';
-  stopCallTimer();
-}
-
-function nextStranger() {
-  socket.emit('next');
-  cleanup();
-  setState('waiting');
-  statusLabel.textContent = 'Finding next stranger...';
-  statusSub.textContent = 'Please wait';
-  socket.emit('find_partner');
-}
-
-function cleanup() {
-  if (peerConnection) {
-    peerConnection.close();
-    peerConnection = null;
-  }
-  remoteAudio.srcObject = null;
-  stopCallTimer();
-}
-
-function startCallTimer() {
-  callSeconds = 0;
-  stopCallTimer();
-  callTimer = setInterval(() => {
-    callSeconds++;
-    totalSeconds++;
-    timerEl.textContent = '⏱ ' + fmt(callSeconds);
-    document.getElementById('totalTime').textContent = fmt(totalSeconds);
-  }, 1000);
-}
-
-function stopCallTimer() {
-  clearInterval(callTimer);
-  callTimer = null;
-}
-
-function fmt(s) {
-  return Math.floor(s/60) + ':' + String(s%60).padStart(2,'0');
-}
-
-function toggleMute() {
-  isMuted = !isMuted;
-  if (localStream) {
-    localStream.getAudioTracks().forEach(t => t.enabled = !isMuted);
-  }
-  muteBtn.textContent = isMuted ? '🔇' : '🎤';
-  muteBtn.classList.toggle('muted', isMuted);
-  muteLabel.textContent = isMuted ? 'Mic off' : 'Mic on';
-}
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-async function createPeer(isInitiator) {
-  const pc = new RTCPeerConnection(iceConfig);
-
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-
-  pc.ontrack = (e) => {
-    remoteAudio.srcObject = e.streams[0];
-    remoteAudio.play().catch(() => {});
-    visualizer.classList.add('active');
-  };
-
-  pc.onicecandidate = (e) => {
-    if (e.candidate) {
-      socket.emit('send_signal', {
-        roomId: currentRoomId,
-        signal: { type: 'candidate', candidate: e.candidate }
-      });
-    }
-  };
-
-  pc.onconnectionstatechange = () => {
-    if (pc.connectionState === 'connected') {
-      statusSub.textContent = 'You are connected — say hello! 👋';
-    } else if (pc.connectionState === 'failed') {
-      showToast('Connection failed. Try next.');
-    }
-  };
-
-  if (isInitiator) {
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    socket.emit('send_signal', {
-      roomId: currentRoomId,
-      signal: { type: 'offer', sdp: pc.localDescription }
-    });
+    sendImageBtn.disabled = false;
+    attachBtn.disabled = false;
+    chatInput.disabled = false;
+    sendBtn.disabled = false;
   }
 
-  return pc;
-}
-
-// Socket events
-socket.on('waiting', () => {
-  statusLabel.textContent = 'Finding a stranger...';
-  statusSub.textContent = 'You are in the queue';
-});
-
-socket.on('partner_found', async ({ roomId, isInitiator }) => {
-  currentRoomId = roomId;
-  setState('connected');
-  statusLabel.textContent = 'Connected!';
-  statusSub.textContent = 'Say hello! 👋';
-  totalChats++;
-  document.getElementById('totalChats').textContent = totalChats;
-  startCallTimer();
-
-  const stream = await getMic();
-  if (!stream) return;
-  peerConnection = await createPeer(isInitiator);
-});
-
-socket.on('receive_signal', async ({ from, signal }) => {
-  if (!peerConnection) {
-    const stream = await getMic();
-    if (!stream) return;
-    peerConnection = await createPeer(false);
+  function resetCallUI() {
+    codeBanner.classList.remove('show');
+    clearInterval(codeCountdownInterval);
+    resetVisualizer(vizYou);
+    resetVisualizer(vizStranger);
   }
 
-  if (signal.type === 'offer') {
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp));
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-    socket.emit('send_signal', {
-      roomId: currentRoomId,
-      signal: { type: 'answer', sdp: peerConnection.localDescription }
-    });
-  } else if (signal.type === 'answer') {
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(signal.sdp));
-  } else if (signal.type === 'candidate') {
+  function resetVisualizer(vizEl) {
+    [...vizEl.children].forEach((bar) => (bar.style.height = '8px'));
+  }
+
+  // ---------------------------------------------------------------------
+  // Online count / connection
+  // ---------------------------------------------------------------------
+  socket.on('online-count', (count) => {
+    onlineCountEl.textContent = count;
+  });
+
+  // ---------------------------------------------------------------------
+  // Matching flow
+  // ---------------------------------------------------------------------
+  findBtn.addEventListener('click', async () => {
     try {
-      await peerConnection.addIceCandidate(new RTCIceCandidate(signal.candidate));
-    } catch(e) {}
+      await ensureLocalStream();
+    } catch (err) {
+      showToast('Microphone access is required to start a call.');
+      return;
+    }
+    isSearching = true;
+    setButtonsForSearching();
+    setStatus('Searching for a stranger…');
+    startAvatarShuffle();
+    clearChat();
+    socket.emit('find-stranger');
+  });
+
+  socket.on('searching', () => {
+    setStatus('Searching for a stranger…');
+  });
+
+  socket.on('matched', async ({ initiator, code, reconnected }) => {
+    isSearching = false;
+    isPaired = true;
+    isInitiator = initiator;
+    stopAvatarShuffle('🎧');
+    setStatus(reconnected ? 'Reconnected!' : 'Connected to a stranger!', true);
+    setButtonsForPaired();
+    startSessionTimer();
+    clearChat();
+    addSystemMessage(reconnected ? '🔁 You reconnected using your secret code.' : '✅ You are now connected with a stranger.');
+    addSystemMessage('🔒 Nothing is stored. Chat disappears when either of you leaves.');
+
+    showSecretCode(code);
+
+    await setupPeerConnection();
+    if (isInitiator) {
+      await createAndSendOffer();
+    }
+  });
+
+  socket.on('partner-left', ({ reason }) => {
+    const messages = {
+      left: 'Stranger left the chat.',
+      skipped: 'Stranger skipped to someone else.',
+      stopped: 'Stranger ended the call.',
+      disconnected: 'Stranger disconnected.',
+      reconnect: 'Stranger reconnected with someone using a code.',
+    };
+    showToast(messages[reason] || 'Stranger disconnected.');
+    endCurrentCallLocally({ autoSearch: false });
+    setStatus('Stranger left. Tap "Find Stranger" to chat with someone new.');
+  });
+
+  nextBtn.addEventListener('click', () => {
+    nextPressCount += 1;
+    socket.emit('next-stranger');
+    endCurrentCallLocally({ autoSearch: false });
+    isSearching = true;
+    setButtonsForSearching();
+    setStatus('Finding your next stranger…');
+    startAvatarShuffle();
+    clearChat();
+
+    if (nextPressCount % 3 === 0) {
+      showInterstitialAd();
+    }
+  });
+
+  stopBtn.addEventListener('click', () => {
+    socket.emit('stop-call');
+    endCurrentCallLocally({ autoSearch: false });
+    isSearching = false;
+    setButtonsForIdle();
+    setStatus('Call ended. Tap "Find Stranger" to begin again.');
+    avatarEmoji.textContent = '🙂';
+  });
+
+  function endCurrentCallLocally() {
+    isPaired = false;
+    closePeerConnection();
+    resetCallUI();
+    stopSessionTimer();
+    clearChat();
   }
-});
 
-socket.on('partner_left', () => {
-  cleanup();
-  setState('idle');
-  statusLabel.textContent = 'Stranger disconnected';
-  statusSub.textContent = 'Click start to find someone new';
-  showToast('Stranger left the chat');
-});
+  // ---------------------------------------------------------------------
+  // Secret reconnect code display (30s visible, per spec)
+  // ---------------------------------------------------------------------
+  function showSecretCode(code) {
+    codeValue.textContent = code;
+    codeBanner.classList.add('show');
+    let secondsLeft = 30;
+    codeCountdown.textContent = `Visible for ${secondsLeft}s · valid 24h`;
+    clearInterval(codeCountdownInterval);
+    codeCountdownInterval = setInterval(() => {
+      secondsLeft -= 1;
+      if (secondsLeft <= 0) {
+        clearInterval(codeCountdownInterval);
+        codeBanner.classList.remove('show');
+        return;
+      }
+      codeCountdown.textContent = `Visible for ${secondsLeft}s · valid 24h`;
+    }, 1000);
+  }
 
-socket.on('connect_error', () => {
-  showToast('Server not reachable. Is the server running?');
-});
+  // ---------------------------------------------------------------------
+  // Reconnect via code (always-visible panel)
+  // ---------------------------------------------------------------------
+  reconnectBtn.addEventListener('click', attemptReconnect);
+  reconnectInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') attemptReconnect();
+  });
 
-// Online count (demo)
-socket.on('online_count', (n) => {
-  document.getElementById('onlineCount').textContent = n;
-});
+  async function attemptReconnect() {
+    const code = reconnectInput.value.trim();
+    if (!code) {
+      reconnectFeedback.textContent = 'Enter a code first.';
+      reconnectFeedback.className = 'reconnect-feedback error';
+      return;
+    }
+    try {
+      await ensureLocalStream();
+    } catch {
+      reconnectFeedback.textContent = 'Microphone access is required.';
+      reconnectFeedback.className = 'reconnect-feedback error';
+      return;
+    }
+
+    if (isPaired) {
+      socket.emit('stop-call');
+      endCurrentCallLocally();
+    }
+
+    reconnectFeedback.textContent = 'Connecting…';
+    reconnectFeedback.className = 'reconnect-feedback';
+    socket.emit('reconnect-with-code', code);
+  }
+
+  socket.on('reconnect-failed', (msg) => {
+    reconnectFeedback.textContent = msg;
+    reconnectFeedback.className = 'reconnect-feedback error';
+  });
+
+  // Clear feedback + input automatically once reconnect succeeds (matched event also fires)
+  socket.on('matched', () => {
+    reconnectFeedback.textContent = '';
+    reconnectInput.value = '';
+  });
+
+  // ---------------------------------------------------------------------
+  // Mute
+  // ---------------------------------------------------------------------
+  muteBtn.addEventListener('click', () => {
+    isMuted = !isMuted;
+    if (localStream) {
+      localStream.getAudioTracks().forEach((track) => (track.enabled = !isMuted));
+    }
+    muteBtn.textContent = isMuted ? '🔇 Unmute' : '🎙️ Mute';
+    socket.emit('mute-state', isMuted);
+  });
+
+  // ---------------------------------------------------------------------
+  // WebRTC setup
+  // ---------------------------------------------------------------------
+  async function ensureLocalStream() {
+    if (localStream) return localStream;
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    setupLocalVisualizer(localStream);
+    return localStream;
+  }
+
+  async function setupPeerConnection() {
+    closePeerConnection(); // safety: ensure no stale connection
+    myPeerConnection = new RTCPeerConnection(ICE_SERVERS);
+
+    localStream.getTracks().forEach((track) => {
+      myPeerConnection.addTrack(track, localStream);
+    });
+
+    myPeerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit('webrtc-ice-candidate', event.candidate);
+      }
+    };
+
+    myPeerConnection.ontrack = (event) => {
+      remoteStream = event.streams[0];
+      playRemoteAudio(remoteStream);
+      setupRemoteVisualizer(remoteStream);
+    };
+
+    myPeerConnection.onconnectionstatechange = () => {
+      if (!myPeerConnection) return;
+      if (myPeerConnection.connectionState === 'connected') {
+        setStatus('Connected to a stranger!', true);
+      } else if (['disconnected', 'failed', 'closed'].includes(myPeerConnection.connectionState)) {
+        // Partner-left handler already covers the usual teardown path.
+      }
+    };
+  }
+
+  function closePeerConnection() {
+    if (myPeerConnection) {
+      try { myPeerConnection.close(); } catch {}
+      myPeerConnection = null;
+    }
+    const existingAudio = document.getElementById('remoteAudioEl');
+    if (existingAudio) existingAudio.remove();
+    remoteStream = null;
+    stopRemoteVisualizer();
+  }
+
+  function playRemoteAudio(stream) {
+    let audioEl = document.getElementById('remoteAudioEl');
+    if (!audioEl) {
+      audioEl = document.createElement('audio');
+      audioEl.id = 'remoteAudioEl';
+      audioEl.autoplay = true;
+      document.body.appendChild(audioEl);
+    }
+    audioEl.srcObject = stream;
+  }
+
+  async function createAndSendOffer() {
+    const offer = await myPeerConnection.createOffer();
+    await myPeerConnection.setLocalDescription(offer);
+    socket.emit('webrtc-offer', offer);
+  }
+
+  socket.on('webrtc-offer', async (offer) => {
+    if (!myPeerConnection) await setupPeerConnection();
+    await myPeerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await myPeerConnection.createAnswer();
+    await myPeerConnection.setLocalDescription(answer);
+    socket.emit('webrtc-answer', answer);
+  });
+
+  socket.on('webrtc-answer', async (answer) => {
+    if (!myPeerConnection) return;
+    await myPeerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+  });
+
+  socket.on('webrtc-ice-candidate', async (candidate) => {
+    if (!myPeerConnection) return;
+    try {
+      await myPeerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+    } catch (err) {
+      // benign if candidate arrives after teardown
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // Audio visualizer (Web Audio API analyser -> animated CSS bar heights)
+  // ---------------------------------------------------------------------
+  function getAudioContext() {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioContext;
+  }
+
+  function setupLocalVisualizer(stream) {
+    const ctx = getAudioContext();
+    const source = ctx.createMediaStreamSource(stream);
+    localAnalyser = ctx.createAnalyser();
+    localAnalyser.fftSize = 64;
+    source.connect(localAnalyser);
+    startVizLoop();
+  }
+
+  function setupRemoteVisualizer(stream) {
+    const ctx = getAudioContext();
+    const source = ctx.createMediaStreamSource(stream);
+    remoteAnalyser = ctx.createAnalyser();
+    remoteAnalyser.fftSize = 64;
+    source.connect(remoteAnalyser);
+    startVizLoop();
+  }
+
+  function stopRemoteVisualizer() {
+    remoteAnalyser = null;
+    resetVisualizer(vizStranger);
+  }
+
+  function startVizLoop() {
+    if (vizRAF) return; // already running
+    const localData = new Uint8Array(32);
+    const remoteData = new Uint8Array(32);
+
+    let lastSpeakingSent = false;
+
+    function loop() {
+      if (localAnalyser) {
+        localAnalyser.getByteFrequencyData(localData);
+        applyVizBars(vizYou, localData, isMuted);
+
+        const avg = average(localData);
+        const speakingNow = avg > 18 && !isMuted;
+        if (speakingNow !== lastSpeakingSent) {
+          lastSpeakingSent = speakingNow;
+          socket.emit('speaking-state', speakingNow);
+        }
+      }
+      if (remoteAnalyser) {
+        remoteAnalyser.getByteFrequencyData(remoteData);
+        applyVizBars(vizStranger, remoteData, false);
+      }
+      vizRAF = requestAnimationFrame(loop);
+    }
+    loop();
+  }
+
+  function average(arr) {
+    let sum = 0;
+    for (let i = 0; i < arr.length; i++) sum += arr[i];
+    return sum / arr.length;
+  }
+
+  function applyVizBars(vizEl, freqData, muted) {
+    const bars = vizEl.children;
+    const bucketSize = Math.floor(freqData.length / bars.length);
+    for (let i = 0; i < bars.length; i++) {
+      if (muted) {
+        bars[i].style.height = '8px';
+        continue;
+      }
+      let sum = 0;
+      for (let j = i * bucketSize; j < (i + 1) * bucketSize; j++) sum += freqData[j];
+      const avg = sum / bucketSize;
+      const height = Math.max(8, Math.min(44, Math.round((avg / 255) * 44)));
+      bars[i].style.height = `${height}px`;
+    }
+  }
+
+  socket.on('partner-speaking-state', (isSpeaking) => {
+    vizStranger.classList.toggle('active-speaking', isSpeaking);
+  });
+
+  socket.on('partner-mute-state', (isPartnerMuted) => {
+    const label = document.querySelector('#vizStranger ~ .visualizer-label');
+    if (label) label.textContent = isPartnerMuted ? 'Stranger (muted)' : 'Stranger';
+  });
+
+  // ---------------------------------------------------------------------
+  // Text chat
+  // ---------------------------------------------------------------------
+  function sendChatMessage() {
+    const text = chatInput.value.trim();
+    if (!text || !isPaired) return;
+    socket.emit('chat-message', text);
+    addChatMessage(text, 'me');
+    chatInput.value = '';
+    socket.emit('typing', false);
+  }
+
+  sendBtn.addEventListener('click', sendChatMessage);
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendChatMessage();
+  });
+
+  let typingTimeout = null;
+  chatInput.addEventListener('input', () => {
+    if (!isPaired) return;
+    socket.emit('typing', true);
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => socket.emit('typing', false), 1500);
+  });
+
+  socket.on('chat-message', ({ text }) => {
+    addChatMessage(text, 'them');
+  });
+
+  socket.on('typing', (isTyping) => {
+    typingIndicator.textContent = isTyping ? 'Stranger is typing…' : '';
+  });
+
+  // ---------------------------------------------------------------------
+  // Media (image) sharing — 30s auto-delete both sides
+  // ---------------------------------------------------------------------
+  const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+  sendImageBtn.addEventListener('click', () => imageInput.click());
+  attachBtn.addEventListener('click', () => imageInput.click());
+
+  imageInput.addEventListener('change', () => {
+    const file = imageInput.files[0];
+    imageInput.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Please choose an image file.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      showToast('Image must be 10MB or smaller.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      socket.emit('media-message', { dataUrl });
+      renderMediaBubble(dataUrl, 'me', `local-${Date.now()}`);
+    };
+    reader.readAsDataURL(file);
+  });
+
+  socket.on('media-message', ({ mediaId, dataUrl }) => {
+    renderMediaBubble(dataUrl, 'them', mediaId);
+  });
+
+  socket.on('media-error', (msg) => {
+    showToast(msg);
+  });
+
+  socket.on('media-expire', (mediaId) => {
+    expireMediaBubble(mediaId);
+  });
+
+  function renderMediaBubble(dataUrl, who, mediaId) {
+    const wrap = document.createElement('div');
+    wrap.className = `media-bubble ${who}`;
+    wrap.dataset.mediaId = mediaId;
+
+    const img = document.createElement('img');
+    img.className = 'media-img no-select';
+    img.src = dataUrl;
+    img.draggable = false;
+    img.oncontextmenu = (e) => { e.preventDefault(); triggerScreenshotWarning(); return false; };
+
+    const countdown = document.createElement('div');
+    countdown.className = 'media-countdown';
+    let secondsLeft = 30;
+    countdown.textContent = `Disappears in ${secondsLeft}s`;
+
+    wrap.appendChild(img);
+    wrap.appendChild(countdown);
+    chatMessages.appendChild(wrap);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    const interval = setInterval(() => {
+      secondsLeft -= 1;
+      if (secondsLeft <= 0) {
+        clearInterval(interval);
+        return;
+      }
+      countdown.textContent = `Disappears in ${secondsLeft}s`;
+    }, 1000);
+
+    // Client-side authoritative 30s removal (server also sends media-expire as backstop)
+    setTimeout(() => {
+      clearInterval(interval);
+      expireMediaBubbleEl(wrap);
+    }, 30 * 1000);
+  }
+
+  function expireMediaBubble(mediaId) {
+    const el = chatMessages.querySelector(`[data-media-id="${CSS.escape(mediaId)}"]`);
+    if (el) expireMediaBubbleEl(el);
+  }
+
+  function expireMediaBubbleEl(el) {
+    if (!el || !el.parentNode) return;
+    const placeholder = document.createElement('div');
+    placeholder.className = 'media-gone';
+    placeholder.textContent = '📷 Image expired';
+    el.replaceWith(placeholder);
+  }
+
+  // ---------------------------------------------------------------------
+  // Screenshot deterrent
+  // ---------------------------------------------------------------------
+  function triggerScreenshotWarning() {
+    screenshotWarning.classList.add('show');
+    setTimeout(() => screenshotWarning.classList.remove('show'), 1600);
+  }
+
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    triggerScreenshotWarning();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const key = e.key;
+    const isPrintScreen = key === 'PrintScreen';
+    const isCtrlP = (e.ctrlKey || e.metaKey) && key.toLowerCase() === 'p';
+    const isCtrlShiftS = (e.ctrlKey || e.metaKey) && e.shiftKey && key.toLowerCase() === 's'; // common screenshot tool shortcut
+    const isCmdShift34 = e.metaKey && e.shiftKey && (key === '3' || key === '4'); // macOS screenshot
+
+    if (isPrintScreen || isCtrlP || isCtrlShiftS || isCmdShift34) {
+      if (isCtrlP) e.preventDefault();
+      triggerScreenshotWarning();
+    }
+  });
+
+  // Best-effort: blur visibility hint when tab loses focus (cannot detect actual screenshot capture)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && isPaired) {
+      // no-op placeholder: deterrent only, intentionally not blocking anything functional
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // Interstitial ad after every 3rd "Next"
+  // ---------------------------------------------------------------------
+  function showInterstitialAd() {
+    interstitialOverlay.classList.add('show');
+    interstitialSkipBtn.disabled = true;
+    let secondsLeft = 5;
+    interstitialTimer.textContent = `Continue in ${secondsLeft}s…`;
+    const interval = setInterval(() => {
+      secondsLeft -= 1;
+      if (secondsLeft <= 0) {
+        clearInterval(interval);
+        interstitialTimer.textContent = 'You can continue now.';
+        interstitialSkipBtn.disabled = false;
+        return;
+      }
+      interstitialTimer.textContent = `Continue in ${secondsLeft}s…`;
+    }, 1000);
+  }
+
+  interstitialSkipBtn.addEventListener('click', () => {
+    interstitialOverlay.classList.remove('show');
+  });
+
+  // ---------------------------------------------------------------------
+  // Init
+  // ---------------------------------------------------------------------
+  setButtonsForIdle();
+  setStatus('Tap "Find Stranger" to begin');
+})();
+
 </script>
 </body>
 </html>
