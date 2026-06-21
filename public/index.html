@@ -838,6 +838,27 @@
       <div class="status-sub" id="statusSub"></div>
     </div>
 
+    
+    <!-- ---- Find stranger (shown when idle) ---- -->
+    <div class="find-row">
+      <button class="action-btn find" id="findBtn" style="width:100%;padding:16px 20px;background:#ff7a00;color:#fff;border:0;border-radius:18px;font-size:18px;font-weight:700;text-align:center;cursor:pointer;box-shadow:0 6px 18px rgba(255,122,0,.35);">🔎 अजनबी खोजें</button>
+       🔎 अजनबी खोजें
+    </button>
+      
+    </div>
+
+    <!-- ---- Action buttons row (mute / next / end) ---- -->
+    <div class="actions-row">
+      <button class="action-btn mute" id="muteBtn" disabled>🎙️ म्यूट</button>
+      <button class="action-btn next" id="nextBtn" disabled>➔ अगला</button>
+      <button class="action-btn end" id="stopBtn" disabled>📵 समाप्त करें</button>
+    </div>
+
+    <input type="file" id="imageInput" accept="image/*" style="display:none" />
+
+
+    
+    
     <!-- ---- Audio visualizer ---- -->
     <div class="card viz-card">
       <div class="viz-col">
@@ -854,6 +875,8 @@
       </div>
     </div>
 
+
+    
     <!-- ---- Secret reconnect code card ---- -->
     <div class="card code-card no-select" id="codeBanner">
       <div class="code-icon">🔒</div>
@@ -878,21 +901,6 @@
         <div class="reconnect-feedback" id="reconnectFeedback"></div>
       </div>
     </div>
-
-    <!-- ---- Find stranger (shown when idle) ---- -->
-    <div class="find-row">
-      <button class="action-btn find" id="findBtn">🔎 अजनबी खोजें</button>
-    </div>
-
-    <!-- ---- Action buttons row (mute / next / end) ---- -->
-    <div class="actions-row">
-      <button class="action-btn mute" id="muteBtn" disabled>🎙️ म्यूट</button>
-      <button class="action-btn next" id="nextBtn" disabled>➔ अगला</button>
-      <button class="action-btn end" id="stopBtn" disabled>📵 समाप्त करें</button>
-    </div>
-
-    <input type="file" id="imageInput" accept="image/*" style="display:none" />
-
     <!-- ---- Chat panel ---- -->
     <div class="chat-panel">
       <div class="chat-panel-header">
